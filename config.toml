@@ -1,0 +1,27 @@
+[default]
+# --- Батарея ---
+battery_capacity_kwh = 45.0        # общая ёмкость (kWh)
+min_soc_pct = 20                   # минимальный SOC (%)
+max_charge_kw = 5.5                # макс мощность заряда (kW)
+max_discharge_kw = 6.5             # макс мощность разряда (kW)
+charge_efficiency = 0.80           # КПД заряда (0-1)
+discharge_efficiency = 0.90        # КПД разряда (0-1)
+initial_soc_pct = 100               # начальный SOC (%)
+
+# --- Домашнее потребление ---
+home_consumption_kw = 0             # пока 0, разберёмся позже
+
+# --- Стоимость покупки ---
+delivery_fee_day_eur_mwh = 36.9    # доставка день (EUR/MWh)
+delivery_fee_night_eur_mwh = 21.0  # доставка ночь (EUR/MWh)
+night_start_hour = 22              # начало ночного тарифа
+night_end_hour = 7                 # конец ночного тарифа
+night_on_weekends = true           # выходные = ночной тариф
+vat_pct = 24                       # НДС (%)
+
+# --- Стоимость продажи ---
+buyer_margin_eur_mwh = 15.0        # маржа покупателя (EUR/MWh)
+
+# --- База данных ---
+db_path = "databases/prices.db"    # путь к SQLite
+db_table = "prices"                # имя таблицы

@@ -1,0 +1,38 @@
+[project]
+name = "etsim"
+version = "0.1.0"
+description = "BESS electricity trade optimizer — find optimal charge/discharge schedule"
+readme = "README.md"
+authors = [
+    { name = "Andrew Sitnikov", email = "sitnikov@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "scipy>=1.11",
+]
+
+[project.scripts]
+etsim = "etsim.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.10.2,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
