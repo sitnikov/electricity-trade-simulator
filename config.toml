@@ -9,7 +9,7 @@ discharge_efficiency = 0.90        # КПД разряда (0-1)
 initial_soc_pct = 100               # начальный SOC (%)
 
 # --- Домашнее потребление ---
-home_consumption_kw = 0             # пока 0, разберёмся позже
+home_consumption_kw = 1.54            # ~37 kWh/сутки (подобрано по счёту за январь 2026)
 
 # --- Стоимость покупки ---
 delivery_fee_day_eur_mwh = 36.9    # доставка день (EUR/MWh)
