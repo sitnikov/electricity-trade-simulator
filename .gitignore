@@ -9,9 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
-# Databases
-databases/
-*.db
+# Stray DB files in root
+/database
 
 # Output
 *.csv
