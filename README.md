@@ -92,3 +92,7 @@ uv run pytest
 - **Buy price**: `(spot + delivery_fee) * (1 + VAT%) / 1000` EUR/kWh — delivery fee varies by day/night tariff
 - **Sell price**: `max(0, (spot - buyer_margin)) / 1000` EUR/kWh
 - **Grid export during discharge**: `inverter_output - home_consumption` (home draws from inverter first)
+
+## Authors
+
+Built by [Andrew Sitnikov](https://github.com/sitnikov) and [Claude Code](https://claude.ai/code) (Opus 4.6).
