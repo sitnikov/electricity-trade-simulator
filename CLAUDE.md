@@ -4,25 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BESS (Battery Energy Storage System) electricity trade optimizer. Finds optimal charge/discharge schedule to maximize profit from buying/selling electricity on the grid, given 15-minute spot price data.
+BESS (Battery Energy Storage System) electricity trade optimizer. Finds optimal charge/discharge schedule to maximize profit from buying/selling electricity on the grid, given spot price data (15-min or hourly intervals, auto-detected).
 
 ## Commands
 
 ```bash
-# Install dependencies (uses uv, installs Python 3.12 automatically)
-uv sync
+uv sync                          # install dependencies
+uv run etsim run 2026-01 --mode oracle
+uv run etsim run 2026-01 --mode realistic
+uv run etsim compare 2026-01     # side-by-side oracle vs realistic
+uv run etsim run 2026-01 --mode oracle --profile large_battery --output results.csv
 
-# Run optimizer
-uv run etsim run 2025-01 --mode oracle
-uv run etsim run 2025-01 --mode realistic --profile large_battery --output results.csv
-
-# Run all tests
-uv run pytest
-
-# Run single test
+uv run pytest                    # all tests
 uv run pytest tests/test_optimizer.py::test_oracle_profitable_cycle -v
-
-# Lint
 uv run ruff check src/ tests/
 uv run ruff format --check src/ tests/
 ```
@@ -31,34 +25,42 @@ uv run ruff format --check src/ tests/
 
 ```
 src/etsim/
-├── cli.py          # Click CLI entry point (etsim command)
-├── config.py       # TOML config loading with profile inheritance from [default]
-├── db.py           # SQLite reader — loads 15-min price slots for a month
+├── cli.py          # Click CLI: run, compare commands
+├── config.py       # TOML config with profile inheritance from [default]
+├── db.py           # SQLite reader, auto-detects slot duration (15min/1h)
 ├── models.py       # Dataclasses: Slot, SlotResult, Summary, Action enum
-├── pricing.py      # Buy/sell price formulas (spot + fees + VAT / spot - margin)
+├── pricing.py      # Buy/sell price formulas, day/night delivery fee tariffs
 ├── optimizer.py    # LP optimizer (scipy linprog) — core logic
-└── report.py       # Rich console tables + CSV export
+└── report.py       # Rich console tables, comparison table, CSV export
 ```
 
 ### Data Flow
 
-`CLI → config.load_config() → db.load_prices() → optimizer.optimize_{oracle|realistic}() → report.print_results()`
+`CLI → config.load_config() → db.load_prices() → optimizer.optimize_{oracle|realistic}() → report`
 
-### Optimizer Modes
+### Optimizer (optimizer.py)
 
-- **Oracle**: LP over entire month with perfect foresight. Upper bound on profit.
-- **Realistic**: Rolling horizon LP. Before 14:00 knows today's prices; after 14:00 knows today+tomorrow. Re-optimizes at each boundary, commits only the known portion.
+LP variables per slot: `charge[t]` (grid draw, kWh) and `discharge[t]` (inverter AC output, kWh).
 
-### Key Formulas (in pricing.py)
+- `max_charge_kw` = grid draw rate (AC). Battery receives `charge * eff_c`.
+- `max_discharge_kw` = inverter output rate (AC). Battery drains `discharge / eff_d`.
+- Home consumption reduces grid export: `grid_export = discharge - home_consumption * dt`
+- Linearized as `effective_grid_ratio = 1 - home_per_slot / max_discharge_per_slot`
+- SOC constraint: `SOC[t] = initial + Σ(charge * eff_c) - Σ(discharge / eff_d)`
+
+**Oracle**: LP over entire month (perfect foresight, upper bound on profit).
+**Realistic**: Rolling horizon LP. Before 14:00 knows today; after 14:00 knows today+tomorrow. Re-optimizes at each boundary.
+
+### Pricing (pricing.py)
 
 - Buy: `(spot + delivery_fee) * (1 + VAT%) / 1000` → EUR/kWh
 - Sell: `max(0, spot - buyer_margin) / 1000` → EUR/kWh
-- Discharge to grid: `discharge * eff_discharge - home_consumption * 0.25h` (inverter limitation)
+- Delivery fee: day/night tariff (weekdays 22:00-07:00 = night, weekends = night)
 
 ### Configuration
 
-`config.toml` uses TOML profiles. Non-default profiles inherit missing keys from `[default]`. Selected via `--profile` CLI flag.
+`config.toml` with TOML profiles. Non-default profiles inherit from `[default]`. Selected via `--profile` CLI flag.
 
 ### Database
 
-SQLite in `databases/`, table with columns `datetime` (text, ISO format) and `price` (real, EUR/MWh). 15-minute intervals.
+SQLite in `databases/`, real schema has columns: `id, source_id, datetime (TEXT with tz offset), price (REAL EUR/MWh), created_at, updated_at, ts`. Code handles timezone offsets and strips tzinfo. Data can be hourly or 15-min (auto-detected).
